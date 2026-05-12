@@ -104,7 +104,7 @@ def main():
             m1.metric(label="Počet souborů", value=len(uploaded_files))
             m2.metric(label="Počet stran celkem", value=total_pages)
             m3.metric(label="Celková velikost", value=f"{total_size_mb:.2f} MB".replace('.', ','))
-            m4.metric(label="Celková plocha", value=f"{total_area:.4f} m²".replace('.', ','))
+            m4.metric(label="Celková plocha", value=f"{total_area:.2f} m²".replace('.', ','))
             
             df_display = df.copy()
             last_file = None
