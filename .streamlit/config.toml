@@ -1,0 +1,10 @@
+[theme]
+primaryColor = "#ff7a00"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8f9fa"
+textColor = "#333333"
+font = "sans serif"
+
+[client]
+# Toto skryje horní lištu s nástroji úplně všem uživatelům
+toolbarMode = "minimal"
