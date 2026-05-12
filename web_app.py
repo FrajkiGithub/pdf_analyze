@@ -95,11 +95,16 @@ def main():
             
             st.success("Hotovo!")
             
-            # Rozvržení metrik vlevo s mezerami (poměr sloupců 1:1:1:3 vytlačí obsah doleva)
-            m1, m2, m3, spacer = st.columns([1, 1, 1, 3])
+            # Výpočet celkové velikosti souborů v MB
+            total_size_bytes = sum(file.size for file in uploaded_files)
+            total_size_mb = total_size_bytes / (1024 * 1024)
+            
+            # Rozvržení metrik vlevo s mezerami (4 údaje a 1 mezera napravo)
+            m1, m2, m3, m4, spacer = st.columns([1, 1, 1, 1, 2])
             m1.metric(label="Počet souborů", value=len(uploaded_files))
             m2.metric(label="Počet stran celkem", value=total_pages)
-            m3.metric(label="Celková plocha", value=f"{total_area:.4f} m²".replace('.', ','))
+            m3.metric(label="Celková velikost", value=f"{total_size_mb:.2f} MB".replace('.', ','))
+            m4.metric(label="Celková plocha", value=f"{total_area:.4f} m²".replace('.', ','))
             
             df_display = df.copy()
             last_file = None
