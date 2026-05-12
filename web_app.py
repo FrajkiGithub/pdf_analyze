@@ -1,0 +1,115 @@
+import streamlit as st
+import fitz  # PyMuPDF
+import pandas as pd
+from PIL import Image
+
+def mm_from_pt(pt):
+    return round(pt * 25.4 / 72)
+
+def process_files(uploaded_files):
+    data = []
+    total_area_m2 = 0.0
+
+    for file in uploaded_files:
+        filename = file.name
+        lower_name = filename.lower()
+
+        # Zpracování PDF
+        if lower_name.endswith('.pdf'):
+            # fitz umi cist rovnou z pameti (bytes)
+            file_bytes = file.read()
+            doc = fitz.open(stream=file_bytes, filetype="pdf")
+            num_pages = len(doc)
+            
+            for i, page in enumerate(doc, start=1):
+                rect = page.rect
+                w = mm_from_pt(rect.width)
+                h = mm_from_pt(rect.height)
+                area = (w * h) / 1000000
+                total_area_m2 += area
+                
+                data.append({
+                    "file": filename,
+                    "page": i,
+                    "total_pages": num_pages,
+                    "width_mm": w,
+                    "height_mm": h,
+                    "width_px": None,
+                    "height_px": None,
+                    "area_m2": area
+                })
+            doc.close()
+
+        # Zpracování obrázků
+        elif lower_name.endswith(('.png', '.jpg', '.jpeg', '.tif', '.tiff')):
+            img = Image.open(file)
+            width_px, height_px = img.size
+            dpi = img.info.get('dpi', (72, 72))
+            if dpi[0] == 0 or dpi[1] == 0:
+                dpi = (72, 72)
+            
+            w_mm = round(width_px * 25.4 / dpi[0])
+            h_mm = round(height_px * 25.4 / dpi[1])
+            area = (w_mm * h_mm) / 1000000
+            total_area_m2 += area
+            
+            data.append({
+                "file": filename,
+                "page": 1,
+                "total_pages": 1,
+                "width_mm": w_mm,
+                "height_mm": h_mm,
+                "width_px": width_px,
+                "height_px": height_px,
+                "area_m2": area
+            })
+
+    return data, total_area_m2
+
+def main():
+    # Nastavení vzhledu webové stránky
+    st.set_page_config(page_title="PDF & Image Size Analyzer", layout="wide")
+    st.title("📄 Analyzátor velikosti PDF a obrázků")
+    st.write("Nahrajte soubory pro výpočet rozměrů a plochy.")
+
+    # Komponenta pro nahrání souborů
+    uploaded_files = st.file_uploader(
+        "Vyberte PDF nebo obrázky (lze nahrát více souborů najednou)", 
+        type=["pdf", "png", "jpg", "jpeg", "tif", "tiff"], 
+        accept_multiple_files=True
+    )
+
+    if uploaded_files:
+        with st.spinner('Zpracovávám soubory...'):
+            data, total_area = process_files(uploaded_files)
+
+        if data:
+            # Vytvoření tabulky pomocí Pandas
+            df = pd.DataFrame(data)
+            
+            # Zobrazení součtů a tabulky na webu
+            st.success("Hotovo!")
+            st.metric(label="Celková plocha všech položek", value=f"{total_area:.4f} m²".replace('.', ','))
+            
+            st.subheader("Náhled výsledků")
+            st.dataframe(df, use_container_width=True)
+
+            # Příprava CSV dat pro stažení s českým formátováním (desetinná čárka, středník)
+            df_csv = df.copy()
+            # Přidání řádku s celkovým součtem na konec pro CSV export
+            total_row = {"file": "CELKEM", "area_m2": total_area}
+            df_csv = pd.concat([df_csv, pd.DataFrame([total_row])], ignore_index=True)
+            
+            # Formátování tabulky pro CSV (převod na string s čárkou)
+            csv_data = df_csv.to_csv(index=False, sep=';', decimal=',').encode('utf-8-sig')
+
+            # Tlačítko pro stažení
+            st.download_button(
+                label="📥 Stáhnout výsledky jako _sizes.csv",
+                data=csv_data,
+                file_name="_sizes.csv",
+                mime="text/csv",
+            )
+
+if __name__ == "__main__":
+    main()
