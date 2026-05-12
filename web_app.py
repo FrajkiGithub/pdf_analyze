@@ -64,9 +64,8 @@ def process_files(uploaded_files):
     return data, total_area_m2
 
 def main():
-    st.set_page_config(page_title="PDF Analyzer", layout="wide")
+    st.set_page_config(page_title="Souborový analyzátor", layout="wide")
 
-    # Agresivní skrytí všech Streamlit prvků a odsazení
     hide_streamlit_style = """
                 <style>
                 #MainMenu {visibility: hidden;}
@@ -93,7 +92,16 @@ def main():
             st.success("Hotovo!")
             st.metric(label="Celková plocha všech položek", value=f"{total_area:.4f} m²".replace('.', ','))
             
-            st.dataframe(df, use_container_width=True)
+            df_display = df.copy()
+            last_file = None
+            for i in range(len(df_display)):
+                current_file = df_display.at[i, 'file']
+                if current_file == last_file:
+                    df_display.at[i, 'file'] = '"'
+                else:
+                    last_file = current_file
+
+            st.dataframe(df_display, use_container_width=True, hide_index=True)
 
             df_csv = df.copy()
             total_row = {"file": "CELKEM", "area_m2": total_area}
