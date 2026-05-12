@@ -97,7 +97,7 @@ def main():
             for i in range(len(df_display)):
                 current_file = df_display.at[i, 'file']
                 if current_file == last_file:
-                    df_display.at[i, 'file'] = '"'
+                    df_display.at[i, 'file'] = ""
                 else:
                     last_file = current_file
 
