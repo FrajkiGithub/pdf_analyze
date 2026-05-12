@@ -9,6 +9,7 @@ def mm_from_pt(pt):
 def process_files(uploaded_files):
     data = []
     total_area_m2 = 0.0
+    total_pages_count = 0
 
     for file in uploaded_files:
         filename = file.name
@@ -18,6 +19,7 @@ def process_files(uploaded_files):
             file_bytes = file.read()
             doc = fitz.open(stream=file_bytes, filetype="pdf")
             num_pages = len(doc)
+            total_pages_count += num_pages
             
             for i, page in enumerate(doc, start=1):
                 rect = page.rect
@@ -49,6 +51,7 @@ def process_files(uploaded_files):
             h_mm = round(height_px * 25.4 / dpi[1])
             area = (w_mm * h_mm) / 1000000
             total_area_m2 += area
+            total_pages_count += 1
             
             data.append({
                 "file": filename,
@@ -61,7 +64,7 @@ def process_files(uploaded_files):
                 "area_m2": area
             })
 
-    return data, total_area_m2
+    return data, total_area_m2, total_pages_count
 
 def main():
     st.set_page_config(page_title="Souborový analyzátor", layout="wide")
@@ -72,6 +75,7 @@ def main():
                 footer {visibility: hidden !important; display: none !important;}
                 header {visibility: hidden !important; display: none !important;}
                 .block-container {padding-top: 0rem !important; padding-bottom: 0rem !important;}
+                [data-testid="stMetric"] {text-align: left !important;}
                 </style>
                 """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
@@ -84,17 +88,18 @@ def main():
 
     if uploaded_files:
         with st.spinner('Zpracovávám soubory...'):
-            data, total_area = process_files(uploaded_files)
+            data, total_area, total_pages = process_files(uploaded_files)
 
         if data:
             df = pd.DataFrame(data)
             
             st.success("Hotovo!")
             
-            # Zobrazení metrik ve dvou sloupcích
-            col1, col2 = st.columns(2)
-            col1.metric(label="Počet souborů", value=len(uploaded_files))
-            col2.metric(label="Celková plocha všech položek", value=f"{total_area:.4f} m²".replace('.', ','))
+            # Rozvržení metrik vlevo s mezerami (poměr sloupců 1:1:1:3 vytlačí obsah doleva)
+            m1, m2, m3, spacer = st.columns([1, 1, 1, 3])
+            m1.metric(label="Počet souborů", value=len(uploaded_files))
+            m2.metric(label="Počet stran celkem", value=total_pages)
+            m3.metric(label="Celková plocha", value=f"{total_area:.4f} m²".replace('.', ','))
             
             df_display = df.copy()
             last_file = None
@@ -105,7 +110,15 @@ def main():
                 else:
                     last_file = current_file
 
-            st.dataframe(df_display, use_container_width=True, hide_index=True)
+            # Konfigurace sloupců pro automatické nastavení šířky sloupce file
+            st.dataframe(
+                df_display, 
+                use_container_width=True, 
+                hide_index=True,
+                column_config={
+                    "file": st.column_config.TextColumn("file", width="large")
+                }
+            )
 
             df_csv = df.copy()
             total_row = {"file": "CELKEM", "area_m2": total_area}
