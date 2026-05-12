@@ -90,7 +90,11 @@ def main():
             df = pd.DataFrame(data)
             
             st.success("Hotovo!")
-            st.metric(label="Celková plocha všech položek", value=f"{total_area:.4f} m²".replace('.', ','))
+            
+            # Zobrazení metrik ve dvou sloupcích
+            col1, col2 = st.columns(2)
+            col1.metric(label="Počet souborů", value=len(uploaded_files))
+            col2.metric(label="Celková plocha všech položek", value=f"{total_area:.4f} m²".replace('.', ','))
             
             df_display = df.copy()
             last_file = None
