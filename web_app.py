@@ -64,21 +64,18 @@ def process_files(uploaded_files):
     return data, total_area_m2
 
 def main():
-    st.set_page_config(page_title="PDF & Image Size Analyzer", layout="wide")
+    st.set_page_config(page_title="PDF Analyzer", layout="wide")
 
-    # Skrytí výchozích Streamlit prvků (menu, patička, hlavička)
+    # Agresivní skrytí všech Streamlit prvků a odsazení
     hide_streamlit_style = """
                 <style>
                 #MainMenu {visibility: hidden;}
-                footer {visibility: hidden;}
-                header {visibility: hidden;}
-                .block-container {padding-top: 1rem; padding-bottom: 0rem;}
+                footer {visibility: hidden !important; display: none !important;}
+                header {visibility: hidden !important; display: none !important;}
+                .block-container {padding-top: 0rem !important; padding-bottom: 0rem !important;}
                 </style>
                 """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
-    st.title("📄 Analyzátor velikosti PDF a obrázků")
-    st.write("Nahrajte soubory pro výpočet rozměrů a plochy.")
 
     uploaded_files = st.file_uploader(
         "Vyberte PDF nebo obrázky (lze nahrát více souborů najednou)", 
@@ -96,7 +93,6 @@ def main():
             st.success("Hotovo!")
             st.metric(label="Celková plocha všech položek", value=f"{total_area:.4f} m²".replace('.', ','))
             
-            st.subheader("Náhled výsledků")
             st.dataframe(df, use_container_width=True)
 
             df_csv = df.copy()
