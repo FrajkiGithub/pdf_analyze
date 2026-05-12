@@ -14,9 +14,7 @@ def process_files(uploaded_files):
         filename = file.name
         lower_name = filename.lower()
 
-        # Zpracování PDF
         if lower_name.endswith('.pdf'):
-            # fitz umi cist rovnou z pameti (bytes)
             file_bytes = file.read()
             doc = fitz.open(stream=file_bytes, filetype="pdf")
             num_pages = len(doc)
@@ -40,7 +38,6 @@ def process_files(uploaded_files):
                 })
             doc.close()
 
-        # Zpracování obrázků
         elif lower_name.endswith(('.png', '.jpg', '.jpeg', '.tif', '.tiff')):
             img = Image.open(file)
             width_px, height_px = img.size
@@ -67,12 +64,22 @@ def process_files(uploaded_files):
     return data, total_area_m2
 
 def main():
-    # Nastavení vzhledu webové stránky
     st.set_page_config(page_title="PDF & Image Size Analyzer", layout="wide")
+
+    # Skrytí výchozích Streamlit prvků (menu, patička, hlavička)
+    hide_streamlit_style = """
+                <style>
+                #MainMenu {visibility: hidden;}
+                footer {visibility: hidden;}
+                header {visibility: hidden;}
+                .block-container {padding-top: 1rem; padding-bottom: 0rem;}
+                </style>
+                """
+    st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
     st.title("📄 Analyzátor velikosti PDF a obrázků")
     st.write("Nahrajte soubory pro výpočet rozměrů a plochy.")
 
-    # Komponenta pro nahrání souborů
     uploaded_files = st.file_uploader(
         "Vyberte PDF nebo obrázky (lze nahrát více souborů najednou)", 
         type=["pdf", "png", "jpg", "jpeg", "tif", "tiff"], 
@@ -84,26 +91,20 @@ def main():
             data, total_area = process_files(uploaded_files)
 
         if data:
-            # Vytvoření tabulky pomocí Pandas
             df = pd.DataFrame(data)
             
-            # Zobrazení součtů a tabulky na webu
             st.success("Hotovo!")
             st.metric(label="Celková plocha všech položek", value=f"{total_area:.4f} m²".replace('.', ','))
             
             st.subheader("Náhled výsledků")
             st.dataframe(df, use_container_width=True)
 
-            # Příprava CSV dat pro stažení s českým formátováním (desetinná čárka, středník)
             df_csv = df.copy()
-            # Přidání řádku s celkovým součtem na konec pro CSV export
             total_row = {"file": "CELKEM", "area_m2": total_area}
             df_csv = pd.concat([df_csv, pd.DataFrame([total_row])], ignore_index=True)
             
-            # Formátování tabulky pro CSV (převod na string s čárkou)
             csv_data = df_csv.to_csv(index=False, sep=';', decimal=',').encode('utf-8-sig')
 
-            # Tlačítko pro stažení
             st.download_button(
                 label="📥 Stáhnout výsledky jako _sizes.csv",
                 data=csv_data,
